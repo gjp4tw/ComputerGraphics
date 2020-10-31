@@ -1,8 +1,7 @@
-#include<iostream>
+#include<bits/stdc++.h>
 #include <GL/glut.h>
-#include<algorithm>
-#define width 1600.0
-#define height 900.0
+#define width 800.0
+#define height 450.0
 #define FPS 60.0
 using namespace std;
 double subx=0, suby=0, subz=0;
@@ -10,16 +9,17 @@ double speed = 0.05;
 double subyaw = 0;
 double pitch = -30, yaw = 0;
 double cam_dis = 30;
+bool third_person_view=1;
 struct Motions {
 	bool left, right, front, back, up, down,rotate_left,rotate_right;
 };
 Motions motions = { 0,0,0,0,0,0,0,0 };
 void init() {
 	glutSetCursor(GLUT_CURSOR_NONE);
-	glMatrixMode(GL_PROJECTION);//³]©w§ë¼v¯x°}
-	glLoadIdentity();//­«¸m¬°³æ¦ì¯x°}
-	gluPerspective(60, float(width) / height, 0, 100);//µø¨¤,ªø¼e¤ñ,³Ìªñµø³¥,³Ì»·
-	glEnable(GL_DEPTH_TEST);//²`«×±´´ú
+	glMatrixMode(GL_PROJECTION);//ï¿½]ï¿½wï¿½ï¿½vï¿½xï¿½}
+	glLoadIdentity();//ï¿½ï¿½ï¿½mï¿½ï¿½ï¿½ï¿½ï¿½xï¿½}
+	gluPerspective(60, float(width) / height, 0, 100);//ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½eï¿½ï¿½,ï¿½Ìªï¿½ï¿½ï¿½ï¿½,ï¿½Ì»ï¿½
+	glEnable(GL_DEPTH_TEST);//ï¿½`ï¿½×±ï¿½ï¿½ï¿½
 	
 }
 
@@ -129,9 +129,17 @@ void submarinepos() {
 	}
 	if (motions.rotate_left) {
 		subyaw -= 1;
+		if(subyaw<0)subyaw+=360;
+		yaw+=(!third_person_view);
+		if(yaw>=360)yaw-=360;
 	}
 	if (motions.rotate_right) {
 		subyaw += 1;
+		if(subyaw>=360){
+			subyaw-=360;
+		}
+		yaw-=(!third_person_view);
+		if(yaw<0)yaw+=360;
 	}
 	glutPostRedisplay();
 }
@@ -140,7 +148,10 @@ void display() {
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(-cam_dis*cosf(pitch*3.1415926/180), cam_dis*sinf(-pitch * 3.1415926 / 180),0, 0, 0, 0, 0, 1, 0);
+	if(third_person_view)
+		gluLookAt(-cam_dis*cosf(pitch*3.1415926/180), cam_dis*sinf(-pitch * 3.1415926 / 180),0, 0, 0, 0, 0, 1, 0);
+	else
+		gluLookAt(0,0,0,cam_dis*cosf(pitch*3.1415926/180), -cam_dis*sinf(-pitch * 3.1415926 / 180),0, 0, 1, 0);
 	submarinepos();
 	draw_cube();
 	draw_floor();
@@ -206,6 +217,12 @@ void keyboardup(unsigned char key, int x, int y) {
 	else if (key == 'D' || key == 'd') {
 		motions.rotate_right = 0;
 	}
+	else if(key=='F'||key=='f'){
+		third_person_view^=1;
+		if(!third_person_view){
+			yaw=360-subyaw;
+		}
+	}
 }
 void mouse(int button, int state, int x, int y) {
 	if (button == 3) {//front
@@ -225,7 +242,15 @@ void passive_motion(int x,int y) {
     else if(yaw<0)yaw+=360;
     pitch += dev_y / 8.0;
 	pitch = max(min(pitch, (double)60.0), (double)-60.0);
-	cout << yaw << " " << pitch << endl;
+	if(!third_person_view){
+		//
+		//
+		//
+		//
+		//
+		//
+	}
+	cout << yaw << " " << subyaw<< endl;
 }
 int main(int argc, char** argv) {
 	glutInit(&argc, argv);
