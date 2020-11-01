@@ -1,37 +1,37 @@
-#include<bits/stdc++.h>
+﻿#include<iostream>
 #include <GL/glut.h>
+#include<algorithm>
 #define width 800.0
 #define height 450.0
 #define FPS 60.0
 using namespace std;
-double subx=0, suby=0, subz=0;
+double subx = 0, suby = 0, subz = 0;
 double speed = 0.05;
 double subyaw = 0;
 double pitch = -30, yaw = 0;
 double cam_dis = 30;
-bool third_person_view=1;
+bool third_person_view = 1;
+int kk = 0;
 struct Motions {
-	bool left, right, front, back, up, down,rotate_left,rotate_right;
+	bool left, right, front, back, up, down, rotate_left, rotate_right;
 };
 Motions motions = { 0,0,0,0,0,0,0,0 };
 void init() {
 	glutSetCursor(GLUT_CURSOR_NONE);
-	glMatrixMode(GL_PROJECTION);//�]�w��v�x�}
-	glLoadIdentity();//���m�����x�}
-	gluPerspective(60, float(width) / height, 0, 100);//����,���e��,�̪����,�̻�
-	glEnable(GL_DEPTH_TEST);//�`�ױ���
-	
+	glMatrixMode(GL_PROJECTION);//設定投影矩陣
+	glLoadIdentity();//重置為單位矩陣
+	gluPerspective(60, float(width) / height, 0, 100);//視角,長寬比,最近視野,最遠
+	glEnable(GL_DEPTH_TEST);//深度探測
 }
-
-void timer(int){
-    glutPostRedisplay();
-    glutWarpPointer(width / 2, height / 2);
-    glutTimerFunc(1000 / FPS, timer, 0);
+void timer(int) {
+	glutPostRedisplay();
+	glutWarpPointer(width / 2, height / 2);
+	glutTimerFunc(1000 / FPS, timer, 0);
 }
 void draw_cube() {
 	glPushMatrix();
 	glTranslatef(0, 0, 0);
-	glRotatef( -yaw - subyaw, 0, 1, 0);
+	glRotatef(-yaw - subyaw, 0, 1, 0);
 	glColor3f(1, 0, 0);
 	{
 		glBegin(GL_QUADS);
@@ -63,43 +63,56 @@ void draw_cube() {
 		glEnd();
 	}
 	{
-	glColor3d(0, 0, 0);
-	glBegin(GL_LINES);
-	//glVertex3d(-1, -1, -1);
-	//glVertex3d(-1, +1, -1);
-	glVertex3d(+1, -1, -1);
-	glVertex3d(+1, +1, -1);
-	glVertex3d(+1,  1,  1);
-	glVertex3d(+1, +1, -1);
-	glVertex3d(+1, -1, -1);
-	glVertex3d(+1, -1,  1);
-	glVertex3d(+1, -1, +1);
-	glVertex3d(+1, +1, +1);
-	//glVertex3d(-1, -1, +1);
-	//glVertex3d(-1, +1, +1);
-	glVertex3d(2, 0, 0);
-	glVertex3d(+1, -1, -1);
-	glVertex3d(2, 0, 0);
-	glVertex3d(+1, +1, -1);
-	glVertex3d(2, 0, 0);
-	glVertex3d(+1, -1, +1);
-	glVertex3d(2, 0, 0);
-	glVertex3d(+1, +1, +1);
-	glEnd();
-	glPopMatrix();
+		glColor3d(0, 0, 0);
+		glBegin(GL_LINES);
+		//glVertex3d(-1, -1, -1);
+		//glVertex3d(-1, +1, -1);
+		glVertex3d(+1, -1, -1);
+		glVertex3d(+1, +1, -1);
+		glVertex3d(+1, 1, 1);
+		glVertex3d(+1, +1, -1);
+		glVertex3d(+1, -1, -1);
+		glVertex3d(+1, -1, 1);
+		glVertex3d(+1, -1, +1);
+		glVertex3d(+1, +1, +1);
+		//glVertex3d(-1, -1, +1);
+		//glVertex3d(-1, +1, +1);
+		glVertex3d(2, 0, 0);
+		glVertex3d(+1, -1, -1);
+		glVertex3d(2, 0, 0);
+		glVertex3d(+1, +1, -1);
+		glVertex3d(2, 0, 0);
+		glVertex3d(+1, -1, +1);
+		glVertex3d(2, 0, 0);
+		glVertex3d(+1, +1, +1);
+		glEnd();
+		glPushMatrix();
+		glTranslatef(2.2, 0, 0);
+		if (motions.front||motions.back)
+			glRotatef(10 * (kk++), 1, 0, 0);
+		kk %= 13;
+		for (int gg = 0; gg < 3; gg++) {
+			glBegin(GL_LINES);
+			glVertex3f(0, 0, 0);
+			glVertex3f(0, 1, 0);
+			glEnd();
+			glRotatef(120, 1, 0, 0);
+		}
+		glPopMatrix();
+		glPopMatrix();
 	}
 }
 void draw_floor() {
 	glColor3d(0, 1, 0);
 	glPushMatrix();
-	glTranslatef(0, 0,0);
+	glTranslatef(0, 0, 0);
 	glRotatef(-yaw, 0, 1, 0);
-	glTranslated(subx, -suby ,subz);
+	glTranslated(subx, -suby, subz);
 	glBegin(GL_QUADS);
-	glVertex3f(-10,-2,-10);
-	glVertex3f(-10,-2,10);
-	glVertex3f(10,-2,10);
-	glVertex3f(10,-2,-10);
+	glVertex3f(-10, -2, -10);
+	glVertex3f(-10, -2, 10);
+	glVertex3f(10, -2, 10);
+	glVertex3f(10, -2, -10);
 	glEnd();
 	glPopMatrix();
 }
@@ -114,7 +127,7 @@ void submarinepos() {
 		subz -= speed * sinf((subyaw + 90) * 3.1415926 / 180);
 	}
 	else if (motions.front) {
-		subx -= speed * cosf((subyaw) * 3.1415926/180);
+		subx -= speed * cosf((subyaw) * 3.1415926 / 180);
 		subz -= speed * sinf((subyaw) * 3.1415926 / 180);
 	}
 	else if (motions.back) {
@@ -129,17 +142,17 @@ void submarinepos() {
 	}
 	if (motions.rotate_left) {
 		subyaw -= 1;
-		if(subyaw<0)subyaw+=360;
-		yaw+=(!third_person_view);
-		if(yaw>=360)yaw-=360;
+		if (subyaw < 0)subyaw += 360;
+		yaw += (!third_person_view);
+		if (yaw >= 360)yaw -= 360;
 	}
 	if (motions.rotate_right) {
 		subyaw += 1;
-		if(subyaw>=360){
-			subyaw-=360;
+		if (subyaw >= 360) {
+			subyaw -= 360;
 		}
-		yaw-=(!third_person_view);
-		if(yaw<0)yaw+=360;
+		yaw -= (!third_person_view);
+		if (yaw < 0)yaw += 360;
 	}
 	glutPostRedisplay();
 }
@@ -148,20 +161,20 @@ void display() {
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	if(third_person_view)
-		gluLookAt(-cam_dis*cosf(pitch*3.1415926/180), cam_dis*sinf(-pitch * 3.1415926 / 180),0, 0, 0, 0, 0, 1, 0);
+	if (third_person_view)
+		gluLookAt(-cam_dis * cosf(pitch * 3.1415926 / 180), cam_dis * sinf(-pitch * 3.1415926 / 180), 0, 0, 0, 0, 0, 1, 0);
 	else
-		gluLookAt(0,0,0,cam_dis*cosf(pitch*3.1415926/180), -cam_dis*sinf(-pitch * 3.1415926 / 180),0, 0, 1, 0);
+		gluLookAt(0, 0, 0, cam_dis * cosf(pitch * 3.1415926 / 180), -cam_dis * sinf(-pitch * 3.1415926 / 180), 0, 0, 1, 0);
 	submarinepos();
 	draw_cube();
 	draw_floor();
 	glutSwapBuffers();
 }
-void reshape(int w, int h){
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+void reshape(int w, int h) {
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
 	gluPerspective(60, float(width) / height, 1, 100);//sight
-    glMatrixMode(GL_MODELVIEW);
+	glMatrixMode(GL_MODELVIEW);
 }
 void keyboard(unsigned char key, int x, int y) {
 	if (key == 'Q' || key == 'q') {
@@ -191,6 +204,13 @@ void keyboard(unsigned char key, int x, int y) {
 	else if (key == 'D' || key == 'd') {
 		motions.rotate_right = 1;
 	}
+	else if (key == '=') {
+		speed += 0.01;
+	}
+	else if (key == '-') {
+		speed -= 0.01;
+		speed = max(0.1, speed);
+	}
 }
 void keyboardup(unsigned char key, int x, int y) {
 	if (key == 'Q' || key == 'q') {
@@ -217,10 +237,10 @@ void keyboardup(unsigned char key, int x, int y) {
 	else if (key == 'D' || key == 'd') {
 		motions.rotate_right = 0;
 	}
-	else if(key=='F'||key=='f'){
-		third_person_view^=1;
-		if(!third_person_view){
-			yaw=360-subyaw;
+	else if (key == 'F' || key == 'f') {
+		third_person_view ^= 1;
+		if (!third_person_view) {
+			yaw = 360 - subyaw;
 		}
 	}
 }
@@ -228,21 +248,21 @@ void mouse(int button, int state, int x, int y) {
 	if (button == 3) {//front
 		cam_dis -= 0.5;
 	}
-	else if(button==4){
+	else if (button == 4) {
 		cam_dis += 0.5;
 	}
-	cam_dis = max(min(80.0,cam_dis ),5.0 );
+	cam_dis = max(min(80.0, cam_dis), 5.0);
 }
-void passive_motion(int x,int y) {
+void passive_motion(int x, int y) {
 	double dev_x, dev_y;
-    dev_x = (width / 2) - x;
-    dev_y = (height / 2) - y;
-    yaw += dev_x / 10.0;
-    if(yaw>=360)yaw-=360;
-    else if(yaw<0)yaw+=360;
-    pitch += dev_y / 8.0;
+	dev_x = (width / 2) - x;
+	dev_y = (height / 2) - y;
+	yaw += dev_x / 10.0;
+	if (yaw >= 360)yaw -= 360;
+	else if (yaw < 0)yaw += 360;
+	pitch += dev_y / 8.0;
 	pitch = max(min(pitch, (double)60.0), (double)-60.0);
-	if(!third_person_view){
+	if (!third_person_view) {
 		//
 		//
 		//
@@ -250,7 +270,7 @@ void passive_motion(int x,int y) {
 		//
 		//
 	}
-	cout << yaw << " " << subyaw<< endl;
+	cout << yaw << " " << subyaw << endl;
 }
 int main(int argc, char** argv) {
 	glutInit(&argc, argv);
