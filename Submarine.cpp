@@ -1,4 +1,4 @@
-﻿#include<iostream>
+#include<iostream>
 #include <GL/glut.h>
 #include<algorithm>
 #include<math.h>
@@ -80,13 +80,10 @@ void dd() {
 			arr.push_back(PerlinNoise(i, k));
 		}
 	}
-	suby = arr[50 * 100 + 50]+2.5;
-	//i*10-500==-subx
-	//(500-subx)/10;
-	//k*10-500=-subz
-	//(500-suby)/10;
+	suby = arr[50 * 100 + 50]+5;
 	isdd = 1;
 }
+vector<double> tmp;
 void new_floor() {
 	if (!isdd)dd();
 	glColor3d(0, 1, 0);
@@ -94,22 +91,29 @@ void new_floor() {
 	glTranslatef(0, 0, 0);
 	glRotatef(-yaw, 0, 1, 0);
 	glTranslated(subx, -suby, subz);
+	tmp.clear();
 	for(int i = 0; i < 99; i++) {
 		for (int k = 0; k < 99; k++) {
 			double tl=arr[i*100+k], tr=arr[i*100+k+1], bl=arr[(i+1)*100+k], br=arr[(i+1)*100+k+1];
 			glBegin(GL_POLYGON);
+			if (abs(50 - int(subx)/10 - i) <= 0.5 && abs(50 - int(subz)/10 - k) <= 0.5)tmp.push_back(arr[i*100+k]*5);
 			glColor3d((1 + arr[i * 100 + k]) / 2.0f, (1 + arr[i * 100 + k]) / 2.0f+0.2, (1 + arr[i * 100 + k]) / 2.0f);
 			glVertex3d(i*10-500,tl*5,k*10 - 500);
+			if (abs(50 - int(subx)/10 - i-1) <= 0.5 && abs(50 - int(subz)/10 - k) <= 0.5)tmp.push_back(arr[i*100+100+k]*5);
 			glColor3d((1 + arr[(i + 1) * 100 + k]) / 2.0f, (1 + arr[(i + 1) * 100 + k]) / 2.0f + 0.2, (1 + arr[(i + 1) * 100 + k]) / 2.0f);
 			glVertex3d((i + 1)*10 - 500,bl*5,k*10 - 500);
+			if (abs(50 - int(subx)/10 - i-1) <= 0.5 && abs(50 - int(subz)/10 - k-1) <= 0.5)tmp.push_back(arr[i*100+101+k]*5);
 			glColor3d((1 + arr[(i+1) * 100 + k+1]) / 2.0f, (1 + arr[(i + 1) * 100 + k + 1]) / 2.0f + 0.2, (1 + arr[(i + 1) * 100 + k + 1]) / 2.0f);
 			glVertex3d((i + 1)*10 - 500,br*5,(k + 1)*10 - 500);
 			glEnd();
 			glBegin(GL_POLYGON);
+			if (abs(50 - int(subx)/10 - i) <= 0.5 && abs(50 - int(subz)/10 - k) <= 0.5)tmp.push_back(arr[i*100+k]*5);
 			glColor3d((1 + arr[i * 100 + k]) / 2.0f, (1 + arr[i * 100 + k]) / 2.0f + 0.2, (1 + arr[i * 100 + k]) / 2.0f);
 			glVertex3d(i*10 - 500, tl * 5, k*10 - 500);
+			if (abs(50 - int(subx)/10 - i-1) <= 0.5 && abs(50 - int(subz)/10 - k-1) <= 0.5)tmp.push_back(arr[i*100+101+k]*5);
 			glColor3d((1 + arr[(i + 1) * 100 + k + 1]) / 2.0f, (1 + arr[(i + 1) * 100 + k + 1]) / 2.0f + 0.2, (1 + arr[(i + 1) * 100 + k + 1]) / 2.0f);
 			glVertex3d((i + 1)*10 - 500, br * 5, (k + 1)*10 - 500);
+			if (abs(50 - int(subx)/10 - i) <= 0.5 && abs(50 - int(subz)/10 - k-1) <= 0.5)tmp.push_back(arr[i*100+k+1]*5);
 			glColor3d((1 + arr[i * 100 + k+1]) / 2.0f, (1 + arr[i * 100 + k + 1]) / 2.0f + 0.2, (1 + arr[i * 100 + k + 1]) / 2.0f);
 			glVertex3d(i*10 - 500, tr*5 , (k + 1)*10 - 500);
 			glEnd();
@@ -222,8 +226,6 @@ void submarinepos() {
 	}
 	if (motions.down) {
 		suby -= speed;
-		/*suby = max(-1.0, suby);*/
-		suby = max(suby, arr[(500 -int(subx))*10 + (500 -int(subz))]+2);
 	}
 	if (motions.rotate_left) {
 		subyaw -= 1;
@@ -239,6 +241,14 @@ void submarinepos() {
 		yaw -= (!third_person_view);
 		if (yaw < 0)yaw += 360;
 	}
+	for(int i=0;i<tmp.size();i++){
+		cout<<tmp[i];
+		suby=max(suby,tmp[i]+3);
+	}
+	if(subx>490)subx=490;
+	else if(subx<-490)subx=-490;
+	if(subz>490)subz=490;
+	else if(subz<-490)subz=-490;
 	glutPostRedisplay();
 }
 void display() {
