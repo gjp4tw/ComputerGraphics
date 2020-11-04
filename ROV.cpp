@@ -6,11 +6,11 @@
 #include<random>
 #include<functional>
 #include<utility>
-#define width 800.0
-#define height 450.0
 #define FPS 60.0
 #define TO_RADIANS 3.1415926/180
 using namespace std;
+double width = GetSystemMetrics(SM_CXSCREEN)/*800.0*/;
+double height = GetSystemMetrics(SM_CYSCREEN)/*450.0*/;
 double subx = 0, suby = 0, subz = 0;
 double speed = 0.2;
 double subyaw = 0;
@@ -20,19 +20,22 @@ double ppp = 0;
 bool third_person_view = 1;
 bool openlight = 1;
 bool grab = 0;
-double fishspeed=0.4;
+double fishspeed = 0.4;
 int kk = 0;
 struct Fish {
-	double x, y, z,angle;
+	double x, y, z, angle;
+};
+struct Plants {
+	double x, y, z;
 };
 vector<double> arr;
-vector<vector<pair<double, double> > >plants;
+vector<vector<Plants > >plants;
 vector<struct Fish> fishes;
 GLUquadricObj* sphere = NULL;
 random_device rd;
 default_random_engine gen = default_random_engine(rd());
-uniform_real_distribution<float>dis(0, 250),fis(-500,500);
-auto randpos = bind(dis, gen),fishrandpos = bind(fis, gen);
+uniform_real_distribution<float>dis(0, 250), fis(-500, 500);
+auto randpos = bind(dis, gen), fishrandpos = bind(fis, gen);
 struct Motions {
 	bool left, right, front, back, up, down, rotate_left, rotate_right, accelerate, decelerate;
 };
@@ -86,33 +89,33 @@ void init_floor() {
 	arr.resize(101 * 101 + 1);
 	for (double i = 0; i < 10; i += .1) {
 		for (double k = 0; k < 10; k += .1) {
-			arr[i*1000+k*10]=PerlinNoise(i, k);
+			arr[i * 1000 + k * 10] = PerlinNoise(i, k);
 		}
 	}
 	suby = arr[50 * 100 + 50] + 5;
 }
 void init_plants() {
-	plants.resize(4, vector<pair<double, double> >(4));
+	plants.resize(4, vector<Plants>(4));
 	for (int i = 0; i < 4; i++) {
 		for (int k = 0; k < 4; k++) {
-			double px = i * 250.0 + randpos() - 500, py = k * 250.0 + randpos() - 500;
-			plants[i][k] = { px,py };
+			double px = i * 250.0 + randpos() - 500, pz = k * 250.0 + randpos() - 500, py = (int(randpos() * 2) % 260+100) * 10;
+			plants[i][k] = { px,py,pz };
 		}
 	}
 }
 void init_fish() {
 	fishes.resize(8);
 	for (int i = 0; i < 8; i++) {
-		double fx = fishrandpos(),fy=randpos() ,fz =fishrandpos(),angle=int(fishrandpos()+1000)%360;
-		fishes[i]= { fx,fy+10,fz,angle };
+		double fx = fishrandpos(), fy = randpos(), fz = fishrandpos(), angle = int(fishrandpos() + 1000) % 360;
+		fishes[i] = { fx,fy + 10,fz,angle };
 	}
 }
 void init() {
 	glutSetCursor(GLUT_CURSOR_NONE);
-	glMatrixMode(GL_PROJECTION);//�]�w��v�x�}
-	glLoadIdentity();//���m�����x�}
-	gluPerspective(60, float(width) / height, 1, 5000);//����,���e��,�̪����,�̻�
-	glEnable(GL_DEPTH_TEST);//�`�ױ���
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(60, float(width) / height, 1, 5000);
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_COLOR_MATERIAL);
 	glutWarpPointer(width / 2, height / 2);
 	init_floor();
@@ -145,72 +148,76 @@ void light() {
 		glDisable(GL_LIGHT0);
 	}
 }
-double offset=0;
+double offset = 0;
 void draw_fishes() {
 	glColor3d(241 / 255.0, 71 / 255.0, 197 / 255.0);
-	for(int i=0;i<8;i++){
+	for (int i = 0; i < 8; i++) {
 		glPushMatrix();
-			glTranslatef(fishes[i].x, fishes[i].y, fishes[i].z);
-			glRotatef(fishes[i].angle,0,1,0);
-			glScaled(3,3,3);
-				glPushMatrix();
-					glRotatef(90, 0, 0, 1);
-					glScalef(0.5, 0.3, 1);
-					glRotatef(45, 0, 1, 0);
-					glutSolidCube(3);
-				glPopMatrix();
-				glPushMatrix();
-					glTranslatef(0,0.1,1);
-					glRotatef(90,0,1,0);
-					glTranslatef(0,0,-.7);
-					glColor3d(0,0,0);
-					gluCylinder(sphere,0.3,0.3,1.4,16,16);
-				glPopMatrix();
-				glColor3d(241 / 255.0, 71 / 255.0, 197 / 255.0);
-				glPushMatrix();
-					glTranslatef(-cosf(offset*2*TO_RADIANS),0,-2.15);
-					for(int i=0;i<150;i++){
-						glBegin(GL_POLYGON);
-							glVertex3d(.9*cosf((i+offset)*2*TO_RADIANS),i/150.0,-(i*2)/150.0);
-							glVertex3d(.9*cosf((i+offset)*2*TO_RADIANS),-i/150.0,-(i*2)/150.0);
-							glVertex3d(.9*cosf((i+1+offset)*2*TO_RADIANS),(-i-1)/150.0,-((i+1)*2)/150.0);
-							glVertex3d(.9*cosf((i+1+offset)*2*TO_RADIANS),(i+1)/150.0,-((i+1)*2)/150.0);
-						glEnd();
-						offset+=0.005;
-					}
-				glPopMatrix();
+		glTranslatef(fishes[i].x, fishes[i].y, fishes[i].z);
+		glRotatef(fishes[i].angle, 0, 1, 0);
+		glScaled(3, 3, 3);
+		glPushMatrix();
+		glRotatef(90, 0, 0, 1);
+		glScalef(0.5, 0.3, 1);
+		glRotatef(45, 0, 1, 0);
+		glutSolidCube(3);
 		glPopMatrix();
+		glPushMatrix();
+		glTranslatef(0, 0.1, 1);
+		glRotatef(90, 0, 1, 0);
+		glTranslatef(0, 0, -.7);
+		glColor3d(0, 0, 0);
+		gluCylinder(sphere, 0.3, 0.3, 1.4, 16, 16);
+		glPopMatrix();
+		glColor3d(241 / 255.0, 71 / 255.0, 197 / 255.0);
+		glPushMatrix();
+		glTranslatef(-cosf(offset * 2 * TO_RADIANS), 0, -2.15);
+		for (int k = 0; k < 150; k++) {
+			glBegin(GL_POLYGON);
+			glVertex3d(.9 * cosf((k + offset) * 2 * TO_RADIANS), k / 150.0, -(k * 2) / 150.0);
+			glVertex3d(.9 * cosf((k + offset) * 2 * TO_RADIANS), -k / 150.0, -(k * 2) / 150.0);
+			glVertex3d(.9 * cosf((k + 1 + offset) * 2 * TO_RADIANS), (-k - 1) / 150.0, -((k + 1) * 2) / 150.0);
+			glVertex3d(.9 * cosf((k + 1 + offset) * 2 * TO_RADIANS), (k + 1) / 150.0, -((k + 1) * 2) / 150.0);
+			glEnd();
+			offset += 0.005;
+		}
+		glPopMatrix();
+		glPopMatrix();
+		fishes[i].x += fishspeed * cosf((fishes[i].angle-90)*TO_RADIANS);
+		fishes[i].z -= fishspeed * sinf((fishes[i].angle-90) *TO_RADIANS);
+		if (fishes[i].x > 500)fishes[i].x = -500;
+		else if (fishes[i].x < -500)fishes[i].x = 500;
+		if(fishes[i].z>500)fishes[i].z = -500;
+		else if(fishes[i].z<-500)fishes[i].z = 500;
 	}
-	
-	
 }
 void draw_plants() {
 	for (int i = 0; i < 4; i++) {
 		for (int k = 0; k < 4; k++) {
 			glPushMatrix();
-				glTranslatef(plants[i][k].first, 0, plants[i][k].second);
-				glRotatef(int(plants[i][k].first + plants[i][k].second) % 360, 0, 1, 0);
-				glColor3d(144 / 255.0, 230 / 255.0, 135 / 255.0);
-				glPushMatrix();
-					double gx, gy, gz, gxx = cosf(ppp / 3.0 * TO_RADIANS) * 4.0, gyy = 0, gzz = cosf(ppp / 3.0 * TO_RADIANS) * 4.0;
-					glTranslated(-gxx, 0, -gzz);
-					for (int j = 0; j < 3600; j++) {
-						glBegin(GL_QUADS);
-							gx = gxx, gy = gyy;
-							gz = gzz;
-							glVertex3d(gx + 3, gy, gz);
-							glVertex3d(gx - 3, gy, gz);
-							gxx = cosf((j + ppp + 1) / 3.0 * TO_RADIANS) * 4.0, gyy = (j + 1.0) / 15.0, 0;
-							gzz = cosf((j + ppp + 1) / 3.0 * TO_RADIANS) * 4.0;
-							glVertex3d(gxx - 3, gyy, gzz);
-							glVertex3d(gxx + 3, gyy, gzz);
-							glVertex3d(gx, gy, gz + 3);
-							glVertex3d(gx, gy, gz - 3);
-							glVertex3d(gxx, gyy, gzz - 3);
-							glVertex3d(gxx, gyy, gzz + 3);
-						glEnd();
-					}
-				glPopMatrix();
+			glTranslatef(plants[i][k].x, 0, plants[i][k].z);
+			glRotatef(int(plants[i][k].x + plants[i][k].z) % 360, 0, 1, 0);
+			glColor3d(144 / 255.0, 230 / 255.0, 135 / 255.0);
+			glPushMatrix();
+			double gx, gy, gz, gxx = cosf(ppp / 3.0 * TO_RADIANS) * 4.0, gyy = 0, gzz = cosf(ppp / 3.0 * TO_RADIANS) * 4.0;
+			glTranslated(-gxx, 0, -gzz);
+			for (int j = 0; j < plants[i][k].y; j++) {
+				glBegin(GL_QUADS);
+				gx = gxx, gy = gyy;
+				gz = gzz;
+				glVertex3d(gx + 3, gy, gz);
+				glVertex3d(gx - 3, gy, gz);
+				gxx = cosf((j + ppp + 1) / 3.0 * TO_RADIANS) * 4.0, gyy = (j + 1.0) / 15.0, 0;
+				gzz = cosf((j + ppp + 1) / 3.0 * TO_RADIANS) * 4.0;
+				glVertex3d(gxx - 3, gyy, gzz);
+				glVertex3d(gxx + 3, gyy, gzz);
+				glVertex3d(gx, gy, gz + 3);
+				glVertex3d(gx, gy, gz - 3);
+				glVertex3d(gxx, gyy, gzz - 3);
+				glVertex3d(gxx, gyy, gzz + 3);
+				glEnd();
+			}
+			glPopMatrix();
 			//GLUquadric* quadratic;
 				  //quadratic = gluNewQuadric();
 				  //if(int(plants[i][k].first + plants[i][k].second)&1)glutSolidTorus(3, 10, 16, 16);
@@ -260,170 +267,171 @@ void Bar() {
 }
 void robot() {
 	glPushMatrix();
-		glTranslatef(0, 9, 0);
-		glPushMatrix();
-			glScalef(4, 6, 2);
-			Cube();
-		glPopMatrix();
-		glPushMatrix();
-			glTranslatef(0, 4, 0);
-			Ball();
-		glPopMatrix();
-		glPushMatrix();
-			glTranslatef(-2.3, 2, 0);
-			glScalef(0.5, 0.5, 0.5);
-			Ball();
-			glScalef(0.5, 10, 0.5);
-			glRotated(90, 1, 0, 0);
-			Bar();
-		glPopMatrix();
-		glPushMatrix();
-			glTranslatef(2.3, 2, 0);
-			glScalef(0.5, 0.5, 0.5);
-			Ball();
-			glScalef(0.5, 10, 0.5);
-			glRotated(90, 1, 0, 0);
-			Bar();
-		glPopMatrix();
-		glPushMatrix();
-			glTranslatef(-1, -3.3, 0);
-			glScalef(0.5, 0.5, 0.5);
-			Ball();
-			glScalef(0.5, 10, 0.5);
-			glRotated(90, 1, 0, 0);
-			Bar();
-		glPopMatrix();
-		glPushMatrix();
-			glTranslatef(1, -3.3, 0);
-			glScalef(0.5, 0.5, 0.5);
-			Ball();
-			glScalef(0.5, 10, 0.5);
-			glRotated(90, 1, 0, 0);
-			Bar();
-		glPopMatrix();
+	glTranslatef(0, 9, 0);
+	glPushMatrix();
+	glScalef(4, 6, 2);
+	Cube();
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0, 4, 0);
+	Ball();
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(-2.3, 2, 0);
+	glScalef(0.5, 0.5, 0.5);
+	Ball();
+	glScalef(0.5, 10, 0.5);
+	glRotated(90, 1, 0, 0);
+	Bar();
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(2.3, 2, 0);
+	glScalef(0.5, 0.5, 0.5);
+	Ball();
+	glScalef(0.5, 10, 0.5);
+	glRotated(90, 1, 0, 0);
+	Bar();
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(-1, -3.3, 0);
+	glScalef(0.5, 0.5, 0.5);
+	Ball();
+	glScalef(0.5, 10, 0.5);
+	glRotated(90, 1, 0, 0);
+	Bar();
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(1, -3.3, 0);
+	glScalef(0.5, 0.5, 0.5);
+	Ball();
+	glScalef(0.5, 10, 0.5);
+	glRotated(90, 1, 0, 0);
+	Bar();
+	glPopMatrix();
 	glPopMatrix();
 }
 void floor() {
 	glColor3d(0, 1, 0);
 	glPushMatrix();
-		glTranslatef(0, 0, 0);
-		glRotatef(-yaw, 0, 1, 0);
-		glTranslated(subx, -suby, subz);
-		draw_plants();
-		draw_coord();
-		//robot();
-		draw_fishes();
-		light();
-		tmp.clear();
-		for (int i = 0; i < 100; i++) {
-			for (int k = 0; k < 100; k++) {
-				double tl = arr[i * 100.0 + k], tr = arr[i * 100.0 + k + 1], bl = arr[(i + 1.0) * 100 + k], br = arr[(i + 1.0) * 100 + k + 1];
-				glBegin(GL_POLYGON);
-				if (abs(50 - int(subx) / 10 - i) <= 0.5 && abs(50 - int(subz) / 10 - k) <= 0.5)tmp.push_back(arr[i * 100.0 + k] * 5);
-				glColor3d((1 + arr[i * 100.0 + k]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k]) / 2.0);
-				glVertex3d(i * 10.0 - 500, tl * 5, k * 10.0 - 500);
-				if (abs(50 - int(subx) / 10 - i - 1) <= 0.5 && abs(50 - int(subz) / 10 - k) <= 0.5)tmp.push_back(arr[i * 100.0 + 100 + k] * 5);
-				glColor3d((1 + arr[(i + 1.0) * 100 + k]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k]) / 2.0);
-				glVertex3d((i + 1.0) * 10 - 500, bl * 5, k * 10.0 - 500);
-				if (abs(50 - int(subx) / 10 - i - 1) <= 0.5 && abs(50 - int(subz) / 10 - k - 1) <= 0.5)tmp.push_back(arr[i * 100.0 + 101 + k] * 5);
-				glColor3d((1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0);
-				glVertex3d((i + 1.0) * 10 - 500, br * 5, (k + 1.0) * 10 - 500);
-				glEnd();
-				glBegin(GL_POLYGON);
-				if (abs(50 - int(subx) / 10 - i) <= 0.5 && abs(50 - int(subz) / 10 - k) <= 0.5)tmp.push_back(arr[i * 100.0 + k] * 5);
-				glColor3d((1 + arr[i * 100.0 + k]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k]) / 2.0);
-				glVertex3d(i * 10.0 - 500, tl * 5, k * 10.0 - 500);
-				if (abs(50 - int(subx) / 10 - i - 1) <= 0.5 && abs(50 - int(subz) / 10 - k - 1) <= 0.5)tmp.push_back(arr[i * 100.0 + 101 + k] * 5);
-				glColor3d((1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0);
-				glVertex3d((i + 1.0) * 10.0 - 500, br * 5, (k + 1.0) * 10 - 500);
-				if (abs(50 - int(subx) / 10 - i) <= 0.5 && abs(50 - int(subz) / 10 - k - 1) <= 0.5)tmp.push_back(arr[i * 100.0 + k + 1] * 5);
-				glColor3d((1 + arr[i * 100.0 + k + 1]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k + 1]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k + 1]) / 2.0);
-				glVertex3d(i * 10.0 - 500, tr * 5, (k + 1.0) * 10 - 500);
-				glEnd();
-			}
+	glTranslatef(0, 0, 0);
+	glRotatef(-yaw, 0, 1, 0);
+	glTranslated(subx, -suby, subz);
+	draw_plants();
+	draw_coord();
+	//robot();
+	draw_fishes();
+	light();
+	tmp.clear();
+	for (int i = 0; i < 100; i++) {
+		for (int k = 0; k < 100; k++) {
+			double tl = arr[i * 100.0 + k], tr = arr[i * 100.0 + k + 1], bl = arr[(i + 1.0) * 100 + k], br = arr[(i + 1.0) * 100 + k + 1];
+			glBegin(GL_POLYGON);
+			if (abs(50 - int(subx) / 10 - i) <= 0.5 && abs(50 - int(subz) / 10 - k) <= 0.5)tmp.push_back(arr[i * 100.0 + k] * 5);
+			glColor3d((1 + arr[i * 100.0 + k]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k]) / 2.0);
+			glVertex3d(i * 10.0 - 500, tl * 5, k * 10.0 - 500);
+			if (abs(50 - int(subx) / 10 - i - 1) <= 0.5 && abs(50 - int(subz) / 10 - k) <= 0.5)tmp.push_back(arr[i * 100.0 + 100 + k] * 5);
+			glColor3d((1 + arr[(i + 1.0) * 100 + k]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k]) / 2.0);
+			glVertex3d((i + 1.0) * 10 - 500, bl * 5, k * 10.0 - 500);
+			if (abs(50 - int(subx) / 10 - i - 1) <= 0.5 && abs(50 - int(subz) / 10 - k - 1) <= 0.5)tmp.push_back(arr[i * 100.0 + 101 + k] * 5);
+			glColor3d((1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0);
+			glVertex3d((i + 1.0) * 10 - 500, br * 5, (k + 1.0) * 10 - 500);
+			glEnd();
+			glBegin(GL_POLYGON);
+			if (abs(50 - int(subx) / 10 - i) <= 0.5 && abs(50 - int(subz) / 10 - k) <= 0.5)tmp.push_back(arr[i * 100.0 + k] * 5);
+			glColor3d((1 + arr[i * 100.0 + k]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k]) / 2.0);
+			glVertex3d(i * 10.0 - 500, tl * 5, k * 10.0 - 500);
+			if (abs(50 - int(subx) / 10 - i - 1) <= 0.5 && abs(50 - int(subz) / 10 - k - 1) <= 0.5)tmp.push_back(arr[i * 100.0 + 101 + k] * 5);
+			glColor3d((1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0 + 0.2, (1 + arr[(i + 1.0) * 100 + k + 1]) / 2.0);
+			glVertex3d((i + 1.0) * 10.0 - 500, br * 5, (k + 1.0) * 10 - 500);
+			if (abs(50 - int(subx) / 10 - i) <= 0.5 && abs(50 - int(subz) / 10 - k - 1) <= 0.5)tmp.push_back(arr[i * 100.0 + k + 1] * 5);
+			glColor3d((1 + arr[i * 100.0 + k + 1]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k + 1]) / 2.0 + 0.2, (1 + arr[i * 100.0 + k + 1]) / 2.0);
+			glVertex3d(i * 10.0 - 500, tr * 5, (k + 1.0) * 10 - 500);
+			glEnd();
 		}
+	}
 	glPopMatrix();
 }
 void timer(int) {
 	glutPostRedisplay();
+	glutWarpPointer(width / 2, height / 2);
 	glutTimerFunc(1000 / FPS, timer, 0);
 }
 void draw_ROV() {
 	glPushMatrix();
-		glTranslatef(0, 0, 0);
-		glRotatef(-yaw - subyaw, 0, 1, 0);
-		glPushMatrix();
-			glColor3f(0, 0, 0);
-			glTranslatef(-2, 0, 0);
-			if (third_person_view) {
-				if (motions.front || motions.back)
-					glRotatef(10 * (kk++), 1, 0, 0);
-				kk %= 13;
-				for (int gg = 0; gg < 3; gg++) {
-					glBegin(GL_POLYGON);
-					glVertex3f(0, 0, 0);
-					glVertex3f(0, 1, 0);
-					glVertex3f(0, 0.8, -0.2);
-					glEnd();
-					glRotatef(120, 1, 0, 0);
-				}
-			}
-		glPopMatrix();
-		glBegin(GL_LINES);
-			glVertex3f(0, 0, 1);
-			glVertex3f(0, 0, 1.2);
-			glVertex3f(0, 0, 1.2);
-			glVertex3f(1.2, 0, 1.2);
-			glVertex3f(0, 0, -1);
-			glVertex3f(0, 0, -1.2);
-			glVertex3f(0, 0, -1.2);
-			glVertex3f(1.2, 0, -1.2);
-		glEnd();
-		//left hand
-		glPushMatrix();
-			glTranslatef(1.2, 0, -1.2);
-			for (int i = 0; i < 3; i++) {
-				glBegin(GL_LINES);
-					glVertex3f(0, 0, 0);
-					glVertex3f(0, 0.3, 0);
-					if (!grab) {
-						glVertex3f(0, 0.3, 0);
-						glVertex3f(0.5, 0.3, 0);
-					}
-					else {
-						glVertex3f(0, 0.3, 0);
-						glVertex3f(0.5, 0, 0);
-					}
-				glEnd();
-				glRotatef(120, 1, 0, 0);
-			}
-		glPopMatrix();
-		//right hand
-		glPushMatrix();
-			glTranslatef(1, 0, 1.2);
-			for (int i = 0; i < 3; i++) {
-				glBegin(GL_LINES);
-					glVertex3f(0, 0, 0);
-					glVertex3f(0, 0.3, 0);
-					if (!grab) {
-						glVertex3f(0, 0.3, 0);
-						glVertex3f(0.5, 0.3, 0);
-					}
-					else {
-						glVertex3f(0, 0.3, 0);
-						glVertex3f(0.5, 0, 0);
-					}
-				glEnd();
-				glRotatef(120, 1, 0, 0);
-			}
-		glPopMatrix();
-		if (third_person_view) {
-			glColor3f(0.3, 0.3, 0.3);
-			glScalef(2, 1, 1);
-			GLUquadric* quadratic;
-			quadratic = gluNewQuadric();
-			gluSphere(quadratic, 1, 30, 30);
+	glTranslatef(0, 0, 0);
+	glRotatef(-yaw - subyaw, 0, 1, 0);
+	glPushMatrix();
+	glColor3f(0, 0, 0);
+	glTranslatef(-2, 0, 0);
+	if (third_person_view) {
+		if (motions.front || motions.back)
+			glRotatef(10 * (kk++), 1, 0, 0);
+		kk %= 13;
+		for (int gg = 0; gg < 3; gg++) {
+			glBegin(GL_POLYGON);
+			glVertex3f(0, 0, 0);
+			glVertex3f(0, 1, 0);
+			glVertex3f(0, 0.8, -0.2);
+			glEnd();
+			glRotatef(120, 1, 0, 0);
 		}
+	}
+	glPopMatrix();
+	glBegin(GL_LINES);
+	glVertex3f(0, 0, 1);
+	glVertex3f(0, 0, 1.2);
+	glVertex3f(0, 0, 1.2);
+	glVertex3f(1.2, 0, 1.2);
+	glVertex3f(0, 0, -1);
+	glVertex3f(0, 0, -1.2);
+	glVertex3f(0, 0, -1.2);
+	glVertex3f(1.2, 0, -1.2);
+	glEnd();
+	//left hand
+	glPushMatrix();
+	glTranslatef(1.2, 0, -1.2);
+	for (int i = 0; i < 3; i++) {
+		glBegin(GL_LINES);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0.3, 0);
+		if (!grab) {
+			glVertex3f(0, 0.3, 0);
+			glVertex3f(0.5, 0.3, 0);
+		}
+		else {
+			glVertex3f(0, 0.3, 0);
+			glVertex3f(0.5, 0, 0);
+		}
+		glEnd();
+		glRotatef(120, 1, 0, 0);
+	}
+	glPopMatrix();
+	//right hand
+	glPushMatrix();
+	glTranslatef(1, 0, 1.2);
+	for (int i = 0; i < 3; i++) {
+		glBegin(GL_LINES);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0.3, 0);
+		if (!grab) {
+			glVertex3f(0, 0.3, 0);
+			glVertex3f(0.5, 0.3, 0);
+		}
+		else {
+			glVertex3f(0, 0.3, 0);
+			glVertex3f(0.5, 0, 0);
+		}
+		glEnd();
+		glRotatef(120, 1, 0, 0);
+	}
+	glPopMatrix();
+	if (third_person_view) {
+		glColor3f(0.3, 0.3, 0.3);
+		glScalef(2, 1, 1);
+		GLUquadric* quadratic;
+		quadratic = gluNewQuadric();
+		gluSphere(quadratic, 1, 30, 30);
+	}
 	glPopMatrix();
 }
 void ROVpos() {
@@ -485,7 +493,7 @@ void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glColor4d(0.117, 0.352, 0.666, 0);
-	glutSolidSphere(600, 16, 16);
+	glutSolidSphere(1200, 16, 16);
 	if (third_person_view)
 		gluLookAt(-cam_dis * cosf(pitch * TO_RADIANS), cam_dis * sinf(-pitch * TO_RADIANS), 0, 0, 0, 0, 0, 1, 0);
 	else
@@ -495,7 +503,6 @@ void display() {
 	floor();
 	glutSwapBuffers();
 	glFlush();
-	glutWarpPointer(width / 2, height / 2);
 }
 void reshape(int w, int h) {
 	glMatrixMode(GL_PROJECTION);
