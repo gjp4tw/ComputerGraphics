@@ -20,14 +20,19 @@ double ppp = 0;
 bool third_person_view = 1;
 bool openlight = 1;
 bool grab = 0;
+double fishspeed=0.4;
 int kk = 0;
+struct Fish {
+	double x, y, z,angle;
+};
 vector<double> arr;
 vector<vector<pair<double, double> > >plants;
+vector<struct Fish> fishes;
 GLUquadricObj* sphere = NULL;
 random_device rd;
 default_random_engine gen = default_random_engine(rd());
-uniform_real_distribution<float>dis(0, 250);
-auto randpos = bind(dis, gen);
+uniform_real_distribution<float>dis(0, 250),fis(-500,500);
+auto randpos = bind(dis, gen),fishrandpos = bind(fis, gen);
 struct Motions {
 	bool left, right, front, back, up, down, rotate_left, rotate_right, accelerate, decelerate;
 };
@@ -78,9 +83,10 @@ double PerlinNoise(float x, float y) {
 	return noise;
 }
 void init_floor() {
+	arr.resize(101 * 101 + 1);
 	for (double i = 0; i < 10; i += .1) {
 		for (double k = 0; k < 10; k += .1) {
-			arr.push_back(PerlinNoise(i, k));
+			arr[i*1000+k*10]=PerlinNoise(i, k);
 		}
 	}
 	suby = arr[50 * 100 + 50] + 5;
@@ -94,16 +100,24 @@ void init_plants() {
 		}
 	}
 }
+void init_fish() {
+	fishes.resize(8);
+	for (int i = 0; i < 8; i++) {
+		double fx = fishrandpos(),fy=randpos() ,fz =fishrandpos(),angle=int(fishrandpos()+1000)%360;
+		fishes[i]= { fx,fy+10,fz,angle };
+	}
+}
 void init() {
 	glutSetCursor(GLUT_CURSOR_NONE);
-	glMatrixMode(GL_PROJECTION);//³]©w§ë¼v¯x°}
-	glLoadIdentity();//­«¸m¬°³æ¦ì¯x°}
-	gluPerspective(60, float(width) / height, 1, 5000);//µø¨¤,ªø¼e¤ñ,³Ìªñµø³¥,³Ì»·
-	glEnable(GL_DEPTH_TEST);//²`«×±´´ú
+	glMatrixMode(GL_PROJECTION);//ï¿½]ï¿½wï¿½ï¿½vï¿½xï¿½}
+	glLoadIdentity();//ï¿½ï¿½ï¿½mï¿½ï¿½ï¿½ï¿½ï¿½xï¿½}
+	gluPerspective(60, float(width) / height, 1, 5000);//ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½eï¿½ï¿½,ï¿½Ìªï¿½ï¿½ï¿½ï¿½,ï¿½Ì»ï¿½
+	glEnable(GL_DEPTH_TEST);//ï¿½`ï¿½×±ï¿½ï¿½ï¿½
 	glEnable(GL_COLOR_MATERIAL);
 	glutWarpPointer(width / 2, height / 2);
 	init_floor();
 	init_plants();
+	init_fish();
 }
 void light() {
 	GLfloat ambient[] = { /*0.5*/.1, /*0.8*/.1, /*0.1*/.1, .1/*0.1*/ };
@@ -131,35 +145,72 @@ void light() {
 		glDisable(GL_LIGHT0);
 	}
 }
+double offset=0;
+void draw_fishes() {
+	glColor3d(241 / 255.0, 71 / 255.0, 197 / 255.0);
+	for(int i=0;i<8;i++){
+		glPushMatrix();
+			glTranslatef(fishes[i].x, fishes[i].y, fishes[i].z);
+			glRotatef(fishes[i].angle,0,1,0);
+			glScaled(3,3,3);
+				glPushMatrix();
+					glRotatef(90, 0, 0, 1);
+					glScalef(0.5, 0.3, 1);
+					glRotatef(45, 0, 1, 0);
+					glutSolidCube(3);
+				glPopMatrix();
+				glPushMatrix();
+					glTranslatef(0,0.1,1);
+					glRotatef(90,0,1,0);
+					glTranslatef(0,0,-.7);
+					glColor3d(0,0,0);
+					gluCylinder(sphere,0.3,0.3,1.4,16,16);
+				glPopMatrix();
+				glColor3d(241 / 255.0, 71 / 255.0, 197 / 255.0);
+				glPushMatrix();
+					glTranslatef(-cosf(offset*2*TO_RADIANS),0,-2.15);
+					for(int i=0;i<150;i++){
+						glBegin(GL_POLYGON);
+							glVertex3d(.9*cosf((i+offset)*2*TO_RADIANS),i/150.0,-(i*2)/150.0);
+							glVertex3d(.9*cosf((i+offset)*2*TO_RADIANS),-i/150.0,-(i*2)/150.0);
+							glVertex3d(.9*cosf((i+1+offset)*2*TO_RADIANS),(-i-1)/150.0,-((i+1)*2)/150.0);
+							glVertex3d(.9*cosf((i+1+offset)*2*TO_RADIANS),(i+1)/150.0,-((i+1)*2)/150.0);
+						glEnd();
+						offset+=0.005;
+					}
+				glPopMatrix();
+		glPopMatrix();
+	}
+	
+	
+}
 void draw_plants() {
-	//if (!isinitplants)init_plants();
 	for (int i = 0; i < 4; i++) {
 		for (int k = 0; k < 4; k++) {
 			glPushMatrix();
-			glTranslatef(plants[i][k].first, 0, plants[i][k].second);
-			glRotatef(int(plants[i][k].first + plants[i][k].second) % 360, 0, 1, 0);
-			glColor3d(144 / 255.0, 230 / 255.0, 135 / 255.0);
-			glPushMatrix();
-			double gx, gy, gz, gxx = cosf(ppp / 3.0 * TO_RADIANS) * 4.0, gyy = 0, gzz = cosf(ppp / 3.0 * TO_RADIANS) * 4.0;
-			glTranslated(-gxx, 0, -gzz);
-			for (int j = 0; j < 3600; j++) {
-				glBegin(GL_QUADS);
-				gx = gxx, gy = gyy;
-				gz = gzz;
-				glVertex3d(gx + 3, gy, gz);
-				glVertex3d(gx - 3, gy, gz);
-				gxx = cosf((j + ppp + 1) / 3.0 * TO_RADIANS) * 4.0, gyy = (j + 1.0) / 15.0, 0;
-				gzz = cosf((j + ppp + 1) / 3.0 * TO_RADIANS) * 4.0;
-				glVertex3d(gxx - 3, gyy, gzz);
-				glVertex3d(gxx + 3, gyy, gzz);
-				glVertex3d(gx, gy, gz + 3);
-				glVertex3d(gx, gy, gz - 3);
-				glVertex3d(gxx, gyy, gzz - 3);
-				glVertex3d(gxx, gyy, gzz + 3);
-
-				glEnd();
-			}
-			glPopMatrix();
+				glTranslatef(plants[i][k].first, 0, plants[i][k].second);
+				glRotatef(int(plants[i][k].first + plants[i][k].second) % 360, 0, 1, 0);
+				glColor3d(144 / 255.0, 230 / 255.0, 135 / 255.0);
+				glPushMatrix();
+					double gx, gy, gz, gxx = cosf(ppp / 3.0 * TO_RADIANS) * 4.0, gyy = 0, gzz = cosf(ppp / 3.0 * TO_RADIANS) * 4.0;
+					glTranslated(-gxx, 0, -gzz);
+					for (int j = 0; j < 3600; j++) {
+						glBegin(GL_QUADS);
+							gx = gxx, gy = gyy;
+							gz = gzz;
+							glVertex3d(gx + 3, gy, gz);
+							glVertex3d(gx - 3, gy, gz);
+							gxx = cosf((j + ppp + 1) / 3.0 * TO_RADIANS) * 4.0, gyy = (j + 1.0) / 15.0, 0;
+							gzz = cosf((j + ppp + 1) / 3.0 * TO_RADIANS) * 4.0;
+							glVertex3d(gxx - 3, gyy, gzz);
+							glVertex3d(gxx + 3, gyy, gzz);
+							glVertex3d(gx, gy, gz + 3);
+							glVertex3d(gx, gy, gz - 3);
+							glVertex3d(gxx, gyy, gzz - 3);
+							glVertex3d(gxx, gyy, gzz + 3);
+						glEnd();
+					}
+				glPopMatrix();
 			//GLUquadric* quadratic;
 				  //quadratic = gluNewQuadric();
 				  //if(int(plants[i][k].first + plants[i][k].second)&1)glutSolidTorus(3, 10, 16, 16);
@@ -260,7 +311,8 @@ void floor() {
 		glTranslated(subx, -suby, subz);
 		draw_plants();
 		draw_coord();
-		robot();
+		//robot();
+		draw_fishes();
 		light();
 		tmp.clear();
 		for (int i = 0; i < 100; i++) {
@@ -443,6 +495,7 @@ void display() {
 	floor();
 	glutSwapBuffers();
 	glFlush();
+	glutWarpPointer(width / 2, height / 2);
 }
 void reshape(int w, int h) {
 	glMatrixMode(GL_PROJECTION);
@@ -552,7 +605,6 @@ void passive_motion(int x, int y) {
 	}
 	pitch += dev_y / 8.0;
 	pitch = max(min(pitch, (double)60.0), (double)-60.0);
-	glutWarpPointer(width / 2, height / 2);
 }
 int main(int argc, char** argv) {
 	glutInit(&argc, argv);
