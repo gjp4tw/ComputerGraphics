@@ -134,7 +134,7 @@ void init() {
 	init_robots();
 }
 void light() {
-	GLfloat ambient[] = { /*0.5*/.1, /*0.8*/.1, /*0.1*/.1, .1/*0.1*/ };
+	GLfloat ambient[] = { .1, .1, .1, .1 };
 	GLfloat diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
 	GLfloat position[] = { 0.0, 300.0, 0.0, 1.0 };
 	GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
@@ -230,10 +230,6 @@ void draw_plants() {
 				glEnd();
 			}
 			glPopMatrix();
-			//GLUquadric* quadratic;
-				  //quadratic = gluNewQuadric();
-				  //if(int(plants[i][k].first + plants[i][k].second)&1)glutSolidTorus(3, 10, 16, 16);
-				  //else glutSolidTeapot(10);
 			glPopMatrix();
 		}
 	}
