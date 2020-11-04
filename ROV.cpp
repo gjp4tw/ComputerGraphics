@@ -29,6 +29,7 @@ struct Plants {
 	double x, y, z;
 };
 vector<double> arr;
+vector<pair<double, double> >robots;
 vector<vector<Plants > >plants;
 vector<struct Fish> fishes;
 GLUquadricObj* sphere = NULL;
@@ -85,6 +86,15 @@ double PerlinNoise(float x, float y) {
 	}
 	return noise;
 }
+void init_robots() {
+	robots.resize(4);
+	for (int i = 0; i < 2; i++) {
+		for (int k = 0; k < 2; k++) {
+			double rx = i * 500 + fabs(fishrandpos()) - 500, rz = k * 500 + fabs(fishrandpos()) - 500;
+			robots[i * 2 + k] = { rx,rz };
+		}
+	}
+}
 void init_floor() {
 	arr.resize(101 * 101 + 1);
 	for (double i = 0; i < 10; i += .1) {
@@ -98,7 +108,7 @@ void init_plants() {
 	plants.resize(4, vector<Plants>(4));
 	for (int i = 0; i < 4; i++) {
 		for (int k = 0; k < 4; k++) {
-			double px = i * 250.0 + randpos() - 500, pz = k * 250.0 + randpos() - 500, py = (int(randpos() * 2) % 260+100) * 10;
+			double px = i * 250.0 + randpos() - 500, pz = k * 250.0 + randpos() - 500, py = (int(randpos() * 2) % 260 + 100) * 10;
 			plants[i][k] = { px,py,pz };
 		}
 	}
@@ -121,6 +131,7 @@ void init() {
 	init_floor();
 	init_plants();
 	init_fish();
+	init_robots();
 }
 void light() {
 	GLfloat ambient[] = { /*0.5*/.1, /*0.8*/.1, /*0.1*/.1, .1/*0.1*/ };
@@ -149,6 +160,7 @@ void light() {
 	}
 }
 double offset = 0;
+
 void draw_fishes() {
 	glColor3d(241 / 255.0, 71 / 255.0, 197 / 255.0);
 	for (int i = 0; i < 8; i++) {
@@ -183,12 +195,12 @@ void draw_fishes() {
 		}
 		glPopMatrix();
 		glPopMatrix();
-		fishes[i].x += fishspeed * cosf((fishes[i].angle-90)*TO_RADIANS);
-		fishes[i].z -= fishspeed * sinf((fishes[i].angle-90) *TO_RADIANS);
+		fishes[i].x += fishspeed * cosf((fishes[i].angle - 90) * TO_RADIANS);
+		fishes[i].z -= fishspeed * sinf((fishes[i].angle - 90) * TO_RADIANS);
 		if (fishes[i].x > 500)fishes[i].x = -500;
 		else if (fishes[i].x < -500)fishes[i].x = 500;
-		if(fishes[i].z>500)fishes[i].z = -500;
-		else if(fishes[i].z<-500)fishes[i].z = 500;
+		if (fishes[i].z > 500)fishes[i].z = -500;
+		else if (fishes[i].z < -500)fishes[i].z = 500;
 	}
 }
 void draw_plants() {
@@ -255,11 +267,9 @@ void draw_coord() {
 }
 vector<double> tmp;
 void Cube() {
-	glColor3f(1, 0, 0);
 	glutSolidCube(1);
 }
 void Ball() {
-	glColor3f(1, 0, 0);
 	glutSolidSphere(1, 16, 16);
 }
 void Bar() {
@@ -310,6 +320,15 @@ void robot() {
 	glPopMatrix();
 	glPopMatrix();
 }
+void draw_robots() {
+	glColor3f(0.1, 0.1, 0.1);
+	for (int i = 0; i < 4; i++) {
+		glPushMatrix();
+		glTranslatef(robots[i].first, -1, robots[i].second);
+		robot();
+		glPopMatrix();
+	}
+}
 void floor() {
 	glColor3d(0, 1, 0);
 	glPushMatrix();
@@ -318,7 +337,7 @@ void floor() {
 	glTranslated(subx, -suby, subz);
 	draw_plants();
 	draw_coord();
-	//robot();
+	draw_robots();
 	draw_fishes();
 	light();
 	tmp.clear();
@@ -493,7 +512,7 @@ void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glColor4d(0.117, 0.352, 0.666, 0);
-	glutSolidSphere(1200, 16, 16);
+	glutSolidSphere(600, 16, 16);
 	if (third_person_view)
 		gluLookAt(-cam_dis * cosf(pitch * TO_RADIANS), cam_dis * sinf(-pitch * TO_RADIANS), 0, 0, 0, 0, 0, 1, 0);
 	else
