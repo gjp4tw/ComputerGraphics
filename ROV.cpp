@@ -160,7 +160,6 @@ void light() {
 	}
 }
 double offset = 0;
-
 void draw_fishes() {
 	glColor3d(241 / 255.0, 71 / 255.0, 197 / 255.0);
 	for (int i = 0; i < 8; i++) {
@@ -379,9 +378,8 @@ void draw_ROV() {
 	glColor3f(0, 0, 0);
 	glTranslatef(-2, 0, 0);
 	if (third_person_view) {
-		if (motions.front || motions.back)
-			glRotatef(10 * (kk++), 1, 0, 0);
-		kk %= 13;
+		glRotatef(10 * (kk), 1, 0, 0);
+		if (motions.front || motions.back)kk++, kk %= 36;
 		for (int gg = 0; gg < 3; gg++) {
 			glBegin(GL_POLYGON);
 			glVertex3f(0, 0, 0);
@@ -450,36 +448,8 @@ void draw_ROV() {
 	glPopMatrix();
 }
 void ROVpos() {
-	if (motions.accelerate) {
-		speed += 0.03;
-	}
-	else if (motions.decelerate) {
-		speed -= 0.03;
-		speed = max(0.03, speed);
-	}
-	if (motions.left) {
-		subx += speed * cosf((subyaw + 90) * TO_RADIANS);
-		subz += speed * sinf((subyaw + 90) * TO_RADIANS);
-	}
-	if (motions.right) {
-		subx -= speed * cosf((subyaw + 90) * TO_RADIANS);
-		subz -= speed * sinf((subyaw + 90) * TO_RADIANS);
-	}
-	if (motions.front) {
-		subx -= speed * cosf((subyaw)* TO_RADIANS);
-		subz -= speed * sinf((subyaw)* TO_RADIANS);
-	}
-	if (motions.back) {
-		subx += speed * cosf((subyaw)* TO_RADIANS);
-		subz += speed * sinf((subyaw)* TO_RADIANS);
-	}
-	if (motions.up) {
-		suby += speed;
-		suby = min(suby, 360.0);
-	}
-	if (motions.down) {
-		suby -= speed;
-	}
+	double prex = subx, prey = suby, prez = subz;
+	bool collaspe = 0;
 	if (motions.rotate_left) {
 		subyaw -= 1;
 		if (subyaw < 0)subyaw += 360;
@@ -493,6 +463,78 @@ void ROVpos() {
 		}
 		yaw -= (!third_person_view);
 		if (yaw < 0)yaw += 360;
+	}
+	if (motions.accelerate) {
+		speed += 0.03;
+	}
+	if (motions.decelerate) {
+		speed -= 0.03;
+		speed = max(0.03, speed);
+	}
+	if (!(motions.right && motions.left)) {
+		if (motions.right) {
+			subx -= speed * cosf((subyaw + 90) * TO_RADIANS);
+			subz -= speed * sinf((subyaw + 90) * TO_RADIANS);
+		}
+		else if (motions.left) {
+			subx += speed * cosf((subyaw + 90) * TO_RADIANS);
+			subz += speed * sinf((subyaw + 90) * TO_RADIANS);
+		}
+		for (int i = 0; i < 4; i++) {
+			if ((subx + robots[i].first) * (subx + robots[i].first) + (suby - 12) * (suby - 12) + (subz + robots[i].second) * (subz + robots[i].second) <= 10 || (subx + robots[i].first) * (subx + robots[i].first) + (suby - 7.2642) * (suby - 7.2642) + (subz + robots[i].second) * (subz + robots[i].second) <= 27) {
+				cout << subx << " " << suby << " " << subz << endl;
+				collaspe = 1;
+				break;
+			}
+		}
+	}
+	if (collaspe) {
+		subx = prex, suby = prey, subz = prez;
+		collaspe = 0;
+	}
+	else {
+		prex = subx, prey = suby, prez = subz;
+	}
+	if (!(motions.front && motions.back)) {
+		if (motions.front) {
+			subx -= speed * cosf((subyaw)* TO_RADIANS);
+			subz -= speed * sinf((subyaw)* TO_RADIANS);
+		}
+		else if (motions.back) {
+			subx += speed * cosf((subyaw)* TO_RADIANS);
+			subz += speed * sinf((subyaw)* TO_RADIANS);
+		}
+		for (int i = 0; i < 4; i++) {
+			if ((subx + robots[i].first) * (subx + robots[i].first) + (suby - 12) * (suby - 12) + (subz + robots[i].second) * (subz + robots[i].second) <= 10 || (subx + robots[i].first) * (subx + robots[i].first) + (suby - 7.2642) * (suby - 7.2642) + (subz + robots[i].second) * (subz + robots[i].second) <= 27) {
+				collaspe = 1;
+				break;
+			}
+		}
+	}
+	if (collaspe) {
+		subx = prex, suby = prey, subz = prez;
+		collaspe = 0;
+	}
+	else {
+		prex = subx, prey = suby, prez = subz;
+	}
+	if (!(motions.up && motions.down)) {
+		if (motions.up) {
+			suby += speed;
+			suby = min(suby, 360.0);
+		}
+		else if (motions.down) {
+			suby -= speed;
+		}
+		for (int i = 0; i < 4; i++) {
+			if ((subx + robots[i].first) * (subx + robots[i].first) + (suby - 12) * (suby - 12) + (subz + robots[i].second) * (subz + robots[i].second) <= 10 || (subx + robots[i].first) * (subx + robots[i].first) + (suby - 7.2642) * (suby - 7.2642) + (subz + robots[i].second) * (subz + robots[i].second) <= 27) {
+				collaspe = 1;
+				break;
+			}
+		}
+		if (collaspe) {
+			subx = prex, suby = prey, subz = prez;
+		}
 	}
 	for (int i = 0; i < tmp.size(); i++) {
 		suby = max(suby, tmp[i] + 3);
